@@ -4,18 +4,18 @@ use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GoogleOAuthClaims {
-    iss: String,
-    aud: String,
-    exp: usize,
-    iat: usize,
-    sub: String,
-    email: String,
-    email_verified: bool,
-    name: String,
-    picture: String,
-    given_name: String,
-    family_name: String,
-    locale: String,
+    pub iss: String,
+    pub aud: String,
+    pub exp: usize,
+    pub iat: usize,
+    pub sub: String,
+    pub email: String,
+    pub email_verified: bool,
+    pub name: String,
+    pub picture: String,
+    pub given_name: String,
+    pub family_name: String,
+    pub locale: String,
 }
 
 impl GoogleOAuthClaims {
