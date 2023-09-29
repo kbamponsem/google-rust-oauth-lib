@@ -6,10 +6,12 @@ use serde_json::Value;
 pub struct GoogleOAuthClaims {
     pub iss: String,
     pub aud: String,
+    pub azp: String,
     pub exp: usize,
     pub iat: usize,
     pub sub: String,
     pub email: String,
+    pub at_hash: String,
     pub email_verified: bool,
     pub name: String,
     pub picture: String,
