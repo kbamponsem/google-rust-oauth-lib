@@ -58,7 +58,8 @@ impl GoogleOAuthClaims {
             None => Err("JSON response is not an object".to_string()),
         }?;
 
-        Ok(public_key)
+        // Return the public key and trim any whitespace
+        Ok(public_key.trim().to_string())
     }
 
     fn get_key_id_from_jwt(token: &str) -> String {
