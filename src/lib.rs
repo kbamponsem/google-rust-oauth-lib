@@ -1,4 +1,8 @@
-use jsonwebtoken::{decode, errors, Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{
+    decode,
+    errors::{self},
+    Algorithm, DecodingKey, Header, Validation,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -20,14 +24,42 @@ pub struct GoogleOAuthClaims {
     pub locale: String,
 }
 
+struct Params {
+    kid: String,
+    algorithm: Algorithm,
+}
+
+impl From<Header> for Params {
+    fn from(value: Header) -> Self {
+        let kid = match value.kid {
+            Some(kid) => kid,
+            None => panic!("No kid found in header"),
+        };
+
+        let algorithm = value.alg;
+
+        Params { kid, algorithm }
+    }
+}
+
 impl GoogleOAuthClaims {
     fn verify_google_jwt(
         token: &str,
         public_key: &str,
+        algorithm: Algorithm,
     ) -> Result<Self, jsonwebtoken::errors::Error> {
+        println!(
+            r#"
+        Received: 
+            token: {}
+            public_key: {}
+            algorithm: {:?}
+        "#,
+            token, public_key, algorithm
+        );
         let decoding_key = DecodingKey::from_rsa_pem(public_key.as_bytes())?;
 
-        let _claims = decode::<Self>(token, &decoding_key, &Validation::new(Algorithm::RS256))?;
+        let _claims = decode::<Self>(token, &decoding_key, &Validation::new(algorithm))?;
 
         return Ok(_claims.claims);
     }
@@ -62,22 +94,19 @@ impl GoogleOAuthClaims {
         Ok(public_key.trim().to_string())
     }
 
-    fn get_key_id_from_jwt(token: &str) -> String {
-        let header = jsonwebtoken::decode_header(token).unwrap();
+    fn get_params_from_token(token: &str) -> Result<Params, errors::Error> {
+        let header = jsonwebtoken::decode_header(token)?;
         println!("Header: {:?}", header);
 
-        let key_id = match header.kid {
-            Some(key_id) => key_id,
-            None => panic!("Key ID not found in JWT header"),
-        };
+        let params: Params = header.into();
 
-        key_id.to_string()
+        Ok(params)
     }
     pub async fn decode_jwt(token: &str) -> Result<Self, errors::Error> {
-        let key_id = Self::get_key_id_from_jwt(token);
-        let pem = Self::fetch_google_public_key(&key_id).await.unwrap();
-        println!("PEM: {}", pem);
+        let params = Self::get_params_from_token(token)?;
+        let kid = params.kid;
+        let pem = Self::fetch_google_public_key(&kid).await.unwrap();
 
-        return Self::verify_google_jwt(token, &pem);
+        return Self::verify_google_jwt(token, &pem, params.algorithm);
     }
 }
